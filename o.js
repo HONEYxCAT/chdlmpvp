@@ -81,6 +81,8 @@
 
 	var hostkey = Config.HostKey;
 
+	var domParser = null;
+
 	var lampavip_css_inited = false;
 
 	var Promise = (function () {
@@ -427,6 +429,9 @@
 		var life_wait_timer;
 		var select_timeout_timer;
 		var select_close_timer;
+		var destroyed = false;
+		var clarification_search_timer;
+		var clarification_search_value = null;
 		var filter_sources = {};
 		var filter_translate = {
 			season: Lampa.Lang.translate("torrent_serial_season"),
@@ -465,9 +470,11 @@
 					network.silent(
 						url,
 						function (json) {
+							if (destroyed) return;
 							resolve(json);
 						},
 						function (e) {
+							if (destroyed) return;
 							reject(e);
 						},
 						data,
@@ -481,9 +488,11 @@
 					network["native"](
 						url,
 						function (res) {
+							if (destroyed) return;
 							resolve(res);
 						},
 						function (e) {
+							if (destroyed) return;
 							reject(e);
 						},
 						data,
@@ -655,7 +664,7 @@
 
 			Lampa.Template.add(
 				"lampac_css",
-				"\n        <style>\n        @charset 'UTF-8';.online-prestige{position:relative;-webkit-border-radius:.3em;border-radius:.3em;background-color:rgba(0,0,0,0.3);display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex}.online-prestige__body{padding:1.2em;line-height:1.3;-webkit-box-flex:1;-webkit-flex-grow:1;-moz-box-flex:1;-ms-flex-positive:1;flex-grow:1;position:relative}@media screen and (max-width:480px){.online-prestige__body{padding:.8em 1.2em}}.online-prestige__img{position:relative;width:13em;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0;min-height:8.2em}.online-prestige__img>img{position:absolute;top:0;left:0;width:100%;height:100%;-o-object-fit:cover;object-fit:cover;-webkit-border-radius:.3em;border-radius:.3em;opacity:0;-webkit-transition:opacity .3s;-o-transition:opacity .3s;-moz-transition:opacity .3s;transition:opacity .3s}.online-prestige__img--loaded>img{opacity:1}@media screen and (max-width:480px){.online-prestige__img{width:7em;min-height:6em}}.online-prestige__folder{padding:1em;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0}.online-prestige__folder>svg{width:4.4em !important;height:4.4em !important}.online-prestige__viewed{position:absolute;top:1em;left:1em;background:rgba(0,0,0,0.45);-webkit-border-radius:100%;border-radius:100%;padding:.25em;font-size:.76em}.online-prestige__viewed>svg{width:1.5em !important;height:1.5em !important}.online-prestige__episode-number{position:absolute;top:0;left:0;right:0;bottom:0;display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-moz-box-pack:center;-ms-flex-pack:center;justify-content:center;font-size:2em}.online-prestige__loader{position:absolute;top:50%;left:50%;width:2em;height:2em;margin-left:-1em;margin-top:-1em;background:url(./img/loader.svg) no-repeat center center;-webkit-background-size:contain;-o-background-size:contain;background-size:contain}.online-prestige__head,.online-prestige__footer{display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-webkit-justify-content:space-between;-moz-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center}.online-prestige__timeline{margin:.8em 0}.online-prestige__timeline>.time-line{display:block !important}.online-prestige__title{font-size:1.7em;overflow:hidden;-o-text-overflow:ellipsis;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical}@media screen and (max-width:480px){.online-prestige__title{font-size:1.4em}}.online-prestige__time{padding-left:2em}.online-prestige__info{display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center}.online-prestige__info>*{overflow:hidden;-o-text-overflow:ellipsis;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical}.online-prestige__quality{padding-left:1em;white-space:nowrap}.online-prestige__scan-file{position:absolute;bottom:0;left:0;right:0}.online-prestige__scan-file .broadcast__scan{margin:0}.online-prestige .online-prestige-split{font-size:.8em;margin:0 1em;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0}.online-prestige.focus::after{content:'';position:absolute;top:-0.6em;left:-0.6em;right:-0.6em;bottom:-0.6em;-webkit-border-radius:.7em;border-radius:.7em;border:solid .3em #fff;z-index:-1;pointer-events:none}.online-prestige+.online-prestige{margin-top:1.5em}.online-prestige--folder .online-prestige__footer{margin-top:.8em}.online-prestige-watched{padding:1em}.online-prestige-watched__icon>svg{width:1.5em;height:1.5em}.online-prestige-watched__body{padding-left:1em;padding-top:.1em;display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-flex-wrap:wrap;-ms-flex-wrap:wrap;flex-wrap:wrap}.online-prestige-watched__body>span+span::before{content:' ● ';vertical-align:top;display:inline-block;margin:0 .5em}.online-prestige-rate{display:-webkit-inline-box;display:-webkit-inline-flex;display:-moz-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center}.online-prestige-rate>svg{width:1.3em !important;height:1.3em !important}.online-prestige-rate>span{font-weight:600;font-size:1.1em;padding-left:.7em}.online-empty{line-height:1.4}.online-empty__title{font-size:1.8em;margin-bottom:.3em}.online-empty__time{font-size:1.2em;font-weight:300;margin-bottom:1.6em}.online-empty__buttons{display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex}.online-empty__buttons>*+*{margin-left:1em}.online-empty__button{background:rgba(0,0,0,0.3);font-size:1.2em;padding:.5em 1.2em;-webkit-border-radius:.2em;border-radius:.2em;margin-bottom:2.4em}.online-empty__button.focus{background:#fff;color:black}.online-empty__templates .online-empty-template:nth-child(2){opacity:.5}.online-empty__templates .online-empty-template:nth-child(3){opacity:.2}.online-empty-template{background-color:rgba(255,255,255,0.3);padding:1em;display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center;-webkit-border-radius:.3em;border-radius:.3em}.online-empty-template>*{background:rgba(0,0,0,0.3);-webkit-border-radius:.3em;border-radius:.3em}.online-empty-template__ico{width:4em;height:4em;margin-right:2.4em}.online-empty-template__body{height:1.7em;width:70%}.online-empty-template+.online-empty-template{margin-top:1em}.lampac-balanser-loader{display:inline-block;width:1.2em;height:1.2em;margin-top:0;margin-left:0.5em;background:url(./img/loader.svg) no-repeat 50% 50%;background-size:contain}.lampac-similar-img{height:7em;width:7em;border-radius:0.3em}.lampac-dim-opacity{opacity:0.5}\n        </style>\n    ",
+				"\n        <style>\n        @charset 'UTF-8';.online-prestige{position:relative;-webkit-border-radius:.3em;border-radius:.3em;background-color:rgba(0,0,0,0.3);display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex}.online-prestige__body{padding:1.2em;line-height:1.3;-webkit-box-flex:1;-webkit-flex-grow:1;-moz-box-flex:1;-ms-flex-positive:1;flex-grow:1;position:relative}@media screen and (max-width:480px){.online-prestige__body{padding:.8em 1.2em}}.online-prestige__img{position:relative;width:13em;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0;min-height:8.2em}.online-prestige__img>img{visibility:hidden;position:absolute;top:0;left:0;width:100%;height:100%;-o-object-fit:cover;object-fit:cover;-webkit-border-radius:.3em;border-radius:.3em;opacity:0;-webkit-transition:opacity .3s;-o-transition:opacity .3s;-moz-transition:opacity .3s;transition:opacity .3s}.online-prestige__img--loaded>img{opacity:1;visibility:visible}@media screen and (max-width:480px){.online-prestige__img{width:7em;min-height:6em}}.online-prestige__folder{padding:1em;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0}.online-prestige__folder>svg{width:4.4em !important;height:4.4em !important}.online-prestige__viewed{position:absolute;top:1em;left:1em;background:rgba(0,0,0,0.45);-webkit-border-radius:100%;border-radius:100%;padding:.25em;font-size:.76em}.online-prestige__viewed>svg{width:1.5em !important;height:1.5em !important}.online-prestige__episode-number{position:absolute;top:0;left:0;right:0;bottom:0;display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-moz-box-pack:center;-ms-flex-pack:center;justify-content:center;font-size:2em}.online-prestige__loader{position:absolute;top:50%;left:50%;width:2em;height:2em;margin-left:-1em;margin-top:-1em;background:url(./img/loader.svg) no-repeat center center;-webkit-background-size:contain;-o-background-size:contain;background-size:contain}.online-prestige__head,.online-prestige__footer{display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-webkit-justify-content:space-between;-moz-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center}.online-prestige__timeline{margin:.8em 0}.online-prestige__timeline>.time-line{display:block !important}.online-prestige__title{font-size:1.7em;overflow:hidden;-o-text-overflow:ellipsis;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical}@media screen and (max-width:480px){.online-prestige__title{font-size:1.4em}}.online-prestige__time{padding-left:2em}.online-prestige__info{display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center}.online-prestige__info>*{overflow:hidden;-o-text-overflow:ellipsis;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical}.online-prestige__quality{padding-left:1em;white-space:nowrap}.online-prestige__scan-file{position:absolute;bottom:0;left:0;right:0}.online-prestige__scan-file .broadcast__scan{margin:0}.online-prestige .online-prestige-split{font-size:.8em;margin:0 1em;-webkit-flex-shrink:0;-ms-flex-negative:0;flex-shrink:0}.online-prestige.focus::after{content:'';position:absolute;top:-0.6em;left:-0.6em;right:-0.6em;bottom:-0.6em;-webkit-border-radius:.7em;border-radius:.7em;border:solid .3em #fff;z-index:-1;pointer-events:none}.online-prestige+.online-prestige{margin-top:1.5em}.online-prestige--folder .online-prestige__footer{margin-top:.8em}.online-prestige-watched{padding:1em}.online-prestige-watched__icon>svg{width:1.5em;height:1.5em}.online-prestige-watched__body{padding-left:1em;padding-top:.1em;display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-flex-wrap:wrap;-ms-flex-wrap:wrap;flex-wrap:wrap}.online-prestige-watched__body>span+span::before{content:' ● ';vertical-align:top;display:inline-block;margin:0 .5em}.online-prestige-rate{display:-webkit-inline-box;display:-webkit-inline-flex;display:-moz-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center}.online-prestige-rate>svg{width:1.3em !important;height:1.3em !important}.online-prestige-rate>span{font-weight:600;font-size:1.1em;padding-left:.7em}.online-empty{line-height:1.4}.online-empty__title{font-size:1.8em;margin-bottom:.3em}.online-empty__time{font-size:1.2em;font-weight:300;margin-bottom:1.6em}.online-empty__buttons{display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex}.online-empty__buttons>*+*{margin-left:1em}.online-empty__button{background:rgba(0,0,0,0.3);font-size:1.2em;padding:.5em 1.2em;-webkit-border-radius:.2em;border-radius:.2em;margin-bottom:2.4em}.online-empty__button.focus{background:#fff;color:black}.online-empty__templates .online-empty-template:nth-child(2){opacity:.5}.online-empty__templates .online-empty-template:nth-child(3){opacity:.2}.online-empty-template{background-color:rgba(255,255,255,0.3);padding:1em;display:-webkit-box;display:-webkit-flex;display:-moz-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-moz-box-align:center;-ms-flex-align:center;align-items:center;-webkit-border-radius:.3em;border-radius:.3em}.online-empty-template>*{background:rgba(0,0,0,0.3);-webkit-border-radius:.3em;border-radius:.3em}.online-empty-template__ico{width:4em;height:4em;margin-right:2.4em}.online-empty-template__body{height:1.7em;width:70%}.online-empty-template+.online-empty-template{margin-top:1em}.lampac-balanser-loader{display:inline-block;width:1.2em;height:1.2em;margin-top:0;margin-left:0.5em;background:url(./img/loader.svg) no-repeat 50% 50%;background-size:contain}.lampac-similar-img{height:7em;width:7em;border-radius:0.3em;visibility:hidden;}.lampac-dim-opacity{opacity:0.5}\n.lampac-similar-img.loaded { visibility: visible; }\n        </style>\n    ",
 			);
 			$("body").append(Lampa.Template.get("lampac_css", {}, true));
 			lampavip_css_inited = true;
@@ -670,13 +679,22 @@
 		}
 
 		function clarificationSearchAdd(value) {
-			var id = Lampa.Utils.hash(object.movie.number_of_seasons ? object.movie.original_name : object.movie.original_title);
-			var all = Lampa.Storage.get(Config.StorageKeys.ClarificationSearch, "{}");
-			all[id] = value;
-			Lampa.Storage.set(Config.StorageKeys.ClarificationSearch, all);
+			clarification_search_value = value;
+			clearTimeout(clarification_search_timer);
+			clarification_search_timer = setTimeout(function () {
+				if (destroyed) return;
+				var id = Lampa.Utils.hash(object.movie.number_of_seasons ? object.movie.original_name : object.movie.original_title);
+				var all = Lampa.Storage.get(Config.StorageKeys.ClarificationSearch, "{}");
+				all[id] = clarification_search_value;
+				Lampa.Storage.set(Config.StorageKeys.ClarificationSearch, all);
+				clarification_search_timer = 0;
+			}, 500);
 		}
 
 		function clarificationSearchDelete() {
+			clearTimeout(clarification_search_timer);
+			clarification_search_timer = 0;
+			clarification_search_value = null;
 			var id = Lampa.Utils.hash(object.movie.number_of_seasons ? object.movie.original_name : object.movie.original_title);
 			var all = Lampa.Storage.get(Config.StorageKeys.ClarificationSearch, "{}");
 			delete all[id];
@@ -717,6 +735,7 @@
 				});
 				clearTimeout(select_timeout_timer);
 				select_timeout_timer = setTimeout(function () {
+					if (destroyed) return;
 					Lampa.Select.close();
 					Lampa.Activity.replace({
 						clarification: 0,
@@ -737,7 +756,10 @@
 				_this.reset();
 				_this.request(url);
 				clearTimeout(select_close_timer);
-				select_close_timer = setTimeout(Lampa.Select.close, 10);
+				select_close_timer = setTimeout(function () {
+					if (destroyed) return;
+					Lampa.Select.close();
+				}, 10);
 			}
 
 			function onSortSelect(a) {
@@ -776,9 +798,11 @@
 				return network["native"](
 					reqUrl,
 					function (response) {
+						if (destroyed) return;
 						this.parse(response);
 					}.bind(this),
 					function (e) {
+						if (destroyed) return;
 						files.render().find(".torrent-filter").remove();
 						_this.empty();
 					},
@@ -790,10 +814,13 @@
 			}
 			this.externalids()
 				.then(function () {
+					if (destroyed) return;
 					return _this.createSource();
 				})
 				.then(function (json) {
+					if (destroyed) return;
 					return ensureBalansersWithSearch().then(function (list) {
+						if (destroyed) return;
 						var allow_search = false;
 						for (var i = 0; i < list.length; i++) {
 							var b = list[i];
@@ -809,9 +836,11 @@
 					});
 				})
 				.then(function () {
+					if (destroyed) return;
 					_this.search();
 				})
 				["catch"](function (e) {
+					if (destroyed) return;
 					_this.noConnectToServer(e);
 				});
 		};
@@ -819,6 +848,7 @@
 		this.rch = function (json, noreset) {
 			var _this2 = this;
 			rchRun(json, function () {
+				if (destroyed) return;
 				if (!noreset) _this2.find();
 				else noreset();
 			});
@@ -839,11 +869,13 @@
 			NetworkManager.timeout(10000);
 			return NetworkManager.silentPromise(url)
 				.then(function (json) {
+					if (destroyed) return;
 					for (var name in json) {
 						object.movie[name] = json[name];
 					}
 				})
 				["catch"](function (e) {
+					if (destroyed) return;
 					console.error(e);
 				});
 		};
@@ -906,6 +938,7 @@
 
 				function delayNext() {
 					life_wait_timer = setTimeout(function () {
+						if (destroyed) return;
 						if (!stopped) poll();
 					}, 1000);
 				}
@@ -941,6 +974,7 @@
 					NetworkManager.timeout(3000);
 					NetworkManager.silentPromise(url)
 						.then(function (json) {
+							if (destroyed) return;
 							life_wait_times++;
 							filter_sources = [];
 							sources = {};
@@ -981,6 +1015,7 @@
 							}
 						})
 						["catch"](function (e) {
+							if (destroyed) return;
 							life_wait_times++;
 							if (life_wait_times > 15) {
 								stopped = true;
@@ -1001,6 +1036,7 @@
 
 			NetworkManager.timeout(15000);
 			return NetworkManager.silentPromise(url).then(function (json) {
+				if (destroyed) return;
 				if (json.accsdb) return Promise.reject(json);
 
 				if (json.life) {
@@ -1011,6 +1047,7 @@
 					}
 					filter.render().find(".filter--sort").append('<span class="lampac-balanser-loader"></span>');
 					return _this4.lifeSource().then(function (online) {
+						if (destroyed) return;
 						return _this4.startSource(online);
 					});
 				}
@@ -1045,6 +1082,7 @@
 				network["native"](
 					finalUrl,
 					function (response) {
+						if (destroyed) return;
 						this.parse(response);
 					}.bind(this),
 					this.doesNotAnswer.bind(this),
@@ -1055,6 +1093,7 @@
 				);
 				clearTimeout(number_of_requests_timer);
 				number_of_requests_timer = setTimeout(function () {
+					if (destroyed) return;
 					number_of_requests = 0;
 				}, 4000);
 			} else this.empty();
@@ -1067,20 +1106,44 @@
 				return [];
 			}
 
-			var html = $("<div>" + str + "</div>");
-			var found = html.find(name);
+			var root = null;
+			try {
+				if (!domParser && typeof DOMParser !== "undefined") {
+					domParser = new DOMParser();
+				}
+				if (domParser) {
+					var doc = domParser.parseFromString("<div>" + str + "</div>", "text/html");
+					if (doc && doc.body) root = doc.body;
+				}
+			} catch (e) {}
 
-			found.each(function (index) {
-				var item = $(this);
+			if (!root) {
 				try {
-					var rawJson = item.attr("data-json");
+					root = document.createElement("div");
+					root.innerHTML = str;
+				} catch (e) {
+					return elems;
+				}
+			}
+
+			var found = [];
+			try {
+				found = root.querySelectorAll ? root.querySelectorAll(name) : [];
+			} catch (e) {
+				found = [];
+			}
+
+			for (var i = 0; i < found.length; i++) {
+				var item = found[i];
+				try {
+					var rawJson = item.getAttribute("data-json");
 					if (!rawJson) {
-						return;
+						continue;
 					}
 					var data = JSON.parse(rawJson);
-					var season = item.attr("s");
-					var episode = item.attr("e");
-					var text = item.text();
+					var season = item.getAttribute("s");
+					var episode = item.getAttribute("e");
+					var text = item.textContent || item.innerText || "";
 					if (!object.movie.name) {
 						if (text.match(/\d+p/i)) {
 							if (!data.quality) {
@@ -1096,12 +1159,12 @@
 					if (episode) data.episode = parseInt(episode);
 					if (season) data.season = parseInt(season);
 					if (text) data.text = text;
-					data.active = item.hasClass("active");
+					data.active = (" " + (item.className || "") + " ").indexOf(" active ") !== -1;
 					elems.push(data);
 				} catch (e) {
 					console.error(e);
 				}
-			});
+			}
 
 			return elems;
 		};
@@ -1123,12 +1186,14 @@
 				network["native"](
 					account(file.url),
 					function (json) {
+						if (destroyed) return;
 						if (json.rch) {
 							if (waiting_rch) {
 								Lampa.Loading.stop();
 								call(false, {});
 							} else {
 								_this.rch(json, function () {
+									if (destroyed) return;
 									Lampa.Loading.stop();
 									_this.getFileUrl(file, call, true);
 								});
@@ -1139,6 +1204,7 @@
 						}
 					},
 					function () {
+						if (destroyed) return;
 						Lampa.Loading.stop();
 						call(false, {});
 					},
@@ -1278,6 +1344,7 @@
 		};
 
 		this.parse = function (str) {
+			if (destroyed) return;
 			var json = Lampa.Arrays.decodeJson(str, {});
 			if (Lampa.Arrays.isObject(str) && str.rch) json = str;
 			if (json.rch) return this.rch(json);
@@ -1385,7 +1452,7 @@
 
 		this.similars = function (json) {
 			var _this6 = this;
-			scroll.clear();
+			var fragment = document.createDocumentFragment();
 			json.forEach(function (elem) {
 				elem.title = elem.text;
 				elem.info = "";
@@ -1400,15 +1467,28 @@
 				var item = Lampa.Template.get("lampac_prestige_folder", elem);
 				if (elem.img) {
 					var image = $('<img class="lampac-similar-img"/>');
+					var img = image[0];
 					item.find(".online-prestige__folder").empty().append(image);
-					images.push(image[0]);
+					images.push(img);
 
 					if (elem.img !== undefined) {
 						if (elem.img.charAt(0) === "/") elem.img = Defined.localhost + elem.img.substring(1);
 						if (elem.img.indexOf("/proxyimg") !== -1) elem.img = account(elem.img);
 					}
 
-					Lampa.Utils.imgLoad(image, elem.img);
+					var tempImg = new Image();
+					tempImg.onload = function () {
+						if (destroyed) return;
+						img.src = tempImg.src;
+						if ((" " + img.className + " ").indexOf(" loaded ") == -1) img.className = (img.className ? img.className + " " : "") + "loaded";
+					};
+					tempImg.onerror = function () {
+						if (destroyed) return;
+						img.src = "./img/img_broken.svg";
+						if ((" " + img.className + " ").indexOf(" loaded ") == -1) img.className = (img.className ? img.className + " " : "") + "loaded";
+					};
+					tempImg.src = elem.img;
+					images.push(tempImg);
 				}
 				item.on("hover:enter", function () {
 					_this6.reset();
@@ -1417,8 +1497,10 @@
 					last = e.target;
 					scroll.update($(e.target), true);
 				});
-				scroll.append(item);
+				if (item && item[0]) fragment.appendChild(item[0]);
 			});
+			scroll.clear();
+			scroll.body()[0].appendChild(fragment);
 			this.filter(
 				{
 					season: filter_find.season.map(function (s) {
@@ -1451,7 +1533,7 @@
 				try {
 					img.onerror = null;
 					img.onload = null;
-					img.src = "";
+					img.removeAttribute("src");
 				} catch (e) {
 					console.error(e);
 				}
@@ -1554,10 +1636,12 @@
 					"tv/" + tmdb_id + "/season/" + season,
 					{},
 					function (data) {
+						if (destroyed) return;
 						episodes = data.episodes || [];
 						call(episodes);
 					},
 					function () {
+						if (destroyed) return;
 						call(episodes);
 					},
 				);
@@ -1592,23 +1676,16 @@
 			var _this8 = this;
 			var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 			if (!items.length) return this.empty();
-			scroll.clear();
-
-			try {
-				if (!object.balanser) scroll.append(Lampa.Template.get("lampac_prestige_watched", {}));
-			} catch (e) {
-				UIManager.initTemplates();
-				if (!object.balanser) scroll.append(Lampa.Template.get("lampac_prestige_watched", {}));
-			}
-
-			this.updateWatched();
 			this.getEpisodes(items[0].season, function (episodes) {
+				if (destroyed) return;
 				var viewed = Lampa.Storage.cache(Config.StorageKeys.OnlineView, 5000, []);
 				var serial = object.movie.name ? true : false;
 				var choice = _this8.getChoice();
 				var fully = window.innerWidth > 480;
 				var scroll_to_element = false;
 				var scroll_to_mark = false;
+				var fragment = document.createDocumentFragment();
+				var new_images = [];
 				items.forEach(function (element, index) {
 					var episode = false;
 					if (serial && episodes.length && !params.similars) {
@@ -1679,16 +1756,24 @@
 					} else if (!serial && object.movie.backdrop_path == "undefined") loader.remove();
 					else {
 						var img = html.find("img")[0];
-						img.onerror = function () {
-							img.src = "./img/img_broken.svg";
-						};
-						img.onload = function () {
-							image.addClass("online-prestige__img--loaded");
+						var tempImg = new Image();
+						tempImg.onload = function () {
+							if (destroyed) return;
+							img.src = tempImg.src;
+							image.addClass("online-prestige__img--loaded loaded");
 							loader.remove();
 							if (serial) image.append('<div class="online-prestige__episode-number">' + ("0" + (element.episode || index + 1)).slice(-2) + "</div>");
 						};
-						img.src = Lampa.TMDB.image("t/p/w300" + (episode ? episode.still_path : object.movie.backdrop_path));
-						images.push(img);
+						tempImg.onerror = function () {
+							if (destroyed) return;
+							img.src = "./img/img_broken.svg";
+							image.addClass("online-prestige__img--loaded loaded");
+							loader.remove();
+							if (serial) image.append('<div class="online-prestige__episode-number">' + ("0" + (element.episode || index + 1)).slice(-2) + "</div>");
+						};
+						tempImg.src = Lampa.TMDB.image("t/p/w300" + (episode ? episode.still_path : object.movie.backdrop_path));
+						new_images.push(img);
+						new_images.push(tempImg);
 					}
 					html.find(".online-prestige__timeline").append(Lampa.Timeline.render(element.timeline));
 					if (viewed.indexOf(hash_behold) !== -1) {
@@ -1763,10 +1848,11 @@
 							});
 						},
 					});
-					scroll.append(html);
+					if (html && html[0]) fragment.appendChild(html[0]);
 				});
 				if (serial && episodes.length > items.length && !params.similars) {
 					var left = episodes.slice(items.length);
+					var days_left_title = Lampa.Lang.translate("full_episode_days_left");
 					left.forEach(function (episode) {
 						var info = [];
 						if (episode.vote_average)
@@ -1783,7 +1869,7 @@
 						var air = new Date((episode.air_date + "").replace(/-/g, "/"));
 						var now = Date.now();
 						var day = Math.round((air.getTime() - now) / (24 * 60 * 60 * 1000));
-						var txt = Lampa.Lang.translate("full_episode_days_left") + ": " + day;
+						var txt = days_left_title + ": " + day;
 						var html = Lampa.Template.get("lampac_prestige_full", {
 							time: Lampa.Utils.secondsToTime((episode ? episode.runtime : object.movie.runtime) * 60, true),
 							info: formatCardInfo(info, true),
@@ -1796,16 +1882,24 @@
 						html.find(".online-prestige__timeline").append(Lampa.Timeline.render(Lampa.Timeline.view(Lampa.Utils.hash([season, episode.episode_number, object.movie.original_title].join("")))));
 						var img = html.find("img")[0];
 						if (episode.still_path) {
-							img.onerror = function () {
-								img.src = "./img/img_broken.svg";
-							};
-							img.onload = function () {
-								image.addClass("online-prestige__img--loaded");
+							var tempImg = new Image();
+							tempImg.onload = function () {
+								if (destroyed) return;
+								img.src = tempImg.src;
+								image.addClass("online-prestige__img--loaded loaded");
 								loader.remove();
 								image.append('<div class="online-prestige__episode-number">' + ("0" + episode.episode_number).slice(-2) + "</div>");
 							};
-							img.src = Lampa.TMDB.image("t/p/w300" + episode.still_path);
-							images.push(img);
+							tempImg.onerror = function () {
+								if (destroyed) return;
+								img.src = "./img/img_broken.svg";
+								image.addClass("online-prestige__img--loaded loaded");
+								loader.remove();
+								image.append('<div class="online-prestige__episode-number">' + ("0" + episode.episode_number).slice(-2) + "</div>");
+							};
+							tempImg.src = Lampa.TMDB.image("t/p/w300" + episode.still_path);
+							new_images.push(img);
+							new_images.push(tempImg);
 						} else {
 							loader.remove();
 							image.append('<div class="online-prestige__episode-number">' + ("0" + episode.episode_number).slice(-2) + "</div>");
@@ -1815,9 +1909,22 @@
 							scroll.update($(e.target), true);
 						});
 						html.addClass("lampac-dim-opacity");
-						scroll.append(html);
+						if (html && html[0]) fragment.appendChild(html[0]);
 					});
 				}
+				scroll.clear();
+				_this8.clearImages();
+
+				try {
+					if (!object.balanser) scroll.append(Lampa.Template.get("lampac_prestige_watched", {}));
+				} catch (e) {
+					UIManager.initTemplates();
+					if (!object.balanser) scroll.append(Lampa.Template.get("lampac_prestige_watched", {}));
+				}
+
+				_this8.updateWatched();
+				scroll.body()[0].appendChild(fragment);
+				images = new_images;
 				if (scroll_to_element) {
 					last = scroll_to_element[0];
 				} else if (scroll_to_mark) {
@@ -1984,6 +2091,7 @@
 		};
 
 		this.noConnectToServer = function (er) {
+			if (destroyed) return;
 			var html = Lampa.Template.get("lampac_does_not_answer", {});
 			html.find(".online-empty__buttons").remove();
 			html.find(".online-empty__title").text(Lampa.Lang.translate("title_error"));
@@ -1995,6 +2103,7 @@
 		};
 
 		this.doesNotAnswer = function (er) {
+			if (destroyed) return;
 			var _this9 = this;
 			this.reset();
 			var html = Lampa.Template.get("lampac_does_not_answer", {
@@ -2014,6 +2123,7 @@
 			scroll.append(html);
 			this.loading(false);
 			balanser_timer = setInterval(function () {
+				if (destroyed) return;
 				tic--;
 				html.find(".timeout").text(tic);
 				if (tic == 0) {
@@ -2095,7 +2205,17 @@
 		this.pause = function () {};
 		this.stop = function () {};
 		this.destroy = function () {
+			destroyed = true;
 			last = false;
+			var need_flush_clarification = clarification_search_timer;
+			clearTimeout(clarification_search_timer);
+			clarification_search_timer = 0;
+			if (need_flush_clarification && clarification_search_value !== null) {
+				var id = Lampa.Utils.hash(object.movie.number_of_seasons ? object.movie.original_name : object.movie.original_title);
+				var all = Lampa.Storage.get(Config.StorageKeys.ClarificationSearch, "{}");
+				all[id] = clarification_search_value;
+				Lampa.Storage.set(Config.StorageKeys.ClarificationSearch, all);
+			}
 			network.clear();
 			this.clearImages();
 			files.destroy();
