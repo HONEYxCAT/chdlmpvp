@@ -285,12 +285,12 @@
 						window.rch_nws[hostkey].connectionId = connectionId;
 					});
 				})
-			["catch"](function (e) {
-				console.error(e);
-				if (startConnection) startConnection();
-			});
+				["catch"](function (e) {
+					console.error(e);
+					if (startConnection) startConnection();
+				});
 		};
-	window.rch_nws[hostkey].typeInvoke(Config.Urls.LampaVip, function () { });
+	window.rch_nws[hostkey].typeInvoke(Config.Urls.LampaVip, function () {});
 
 	var RchController = (function () {
 		var script_promise;
@@ -304,7 +304,7 @@
 			if (script_promise) return script_promise;
 
 			script_promise = new Promise(function (resolve) {
-				Lampa.Utils.putScript([Config.Urls.NwsClientScript], function () { }, false, resolve, true);
+				Lampa.Utils.putScript([Config.Urls.NwsClientScript], function () {}, false, resolve, true);
 			});
 
 			return script_promise;
@@ -360,9 +360,9 @@
 			.then(function () {
 				call();
 			})
-		["catch"](function (e) {
-			console.error(e);
-		});
+			["catch"](function (e) {
+				console.error(e);
+			});
 	}
 
 	function rchInvoke(json, call) {
@@ -425,6 +425,7 @@
 		var images = [];
 		var number_of_requests = 0;
 		var number_of_requests_timer;
+		var request_debounce;
 		var life_wait_times = 0;
 		var life_wait_timer;
 		var select_timeout_timer;
@@ -432,8 +433,6 @@
 		var destroyed = false;
 		var clarification_search_timer;
 		var clarification_search_value = null;
-		var request_debounce_timer;
-		var change_balanser_timer;
 		var filter_sources = {};
 		var filter_translate = {
 			season: Lampa.Lang.translate("torrent_serial_season"),
@@ -755,6 +754,7 @@
 				}
 				choice[a.stype] = b.index;
 				_this.saveChoice(choice);
+				_this.reset();
 				_this.request(url);
 				clearTimeout(select_close_timer);
 				select_close_timer = setTimeout(function () {
@@ -840,10 +840,10 @@
 					if (destroyed) return;
 					_this.search();
 				})
-			["catch"](function (e) {
-				if (destroyed) return;
-				_this.noConnectToServer(e);
-			});
+				["catch"](function (e) {
+					if (destroyed) return;
+					_this.noConnectToServer(e);
+				});
 		};
 
 		this.rch = function (json, noreset) {
@@ -875,10 +875,10 @@
 						object.movie[name] = json[name];
 					}
 				})
-			["catch"](function (e) {
-				if (destroyed) return;
-				console.error(e);
-			});
+				["catch"](function (e) {
+					if (destroyed) return;
+					console.error(e);
+				});
 		};
 
 		this.updateBalanser = function (balanser_name) {
@@ -886,18 +886,13 @@
 		};
 
 		this.changeBalanser = function (balanser_name) {
-			var _this = this;
-			clearTimeout(change_balanser_timer);
-			change_balanser_timer = setTimeout(function () {
-				if (destroyed) return;
-				_this.updateBalanser(balanser_name);
-				Lampa.Storage.set(Config.StorageKeys.OnlineBalanser, balanser_name);
-				var to = _this.getChoice(balanser_name);
-				var from = _this.getChoice();
-				if (from.voice_name) to.voice_name = from.voice_name;
-				_this.saveChoice(to, balanser_name);
-				Lampa.Activity.replace();
-			}, 500);
+			this.updateBalanser(balanser_name);
+			Lampa.Storage.set(Config.StorageKeys.OnlineBalanser, balanser_name);
+			var to = this.getChoice(balanser_name);
+			var from = this.getChoice();
+			if (from.voice_name) to.voice_name = from.voice_name;
+			this.saveChoice(to, balanser_name);
+			Lampa.Activity.replace();
 		};
 
 		this.requestParams = function (url) {
@@ -1020,16 +1015,16 @@
 								delayNext();
 							}
 						})
-					["catch"](function (e) {
-						if (destroyed) return;
-						life_wait_times++;
-						if (life_wait_times > 15) {
-							stopped = true;
-							reject(e);
-						} else {
-							delayNext();
-						}
-					});
+						["catch"](function (e) {
+							if (destroyed) return;
+							life_wait_times++;
+							if (life_wait_times > 15) {
+								stopped = true;
+								reject(e);
+							} else {
+								delayNext();
+							}
+						});
 				}
 
 				poll();
@@ -1081,34 +1076,35 @@
 		};
 
 		this.request = function (url) {
-			var _this = this;
-			clearTimeout(request_debounce_timer);
-			request_debounce_timer = setTimeout(function () {
-				if (destroyed) return;
-				_this.reset();
-				number_of_requests++;
-				var finalUrl = account(url);
+			clearTimeout(request_debounce);
+			request_debounce = setTimeout(
+				function () {
+					if (destroyed) return;
+					number_of_requests++;
+					var finalUrl = account(url);
 
-				if (number_of_requests < 10) {
-					network["native"](
-						finalUrl,
-						function (response) {
+					if (number_of_requests < 10) {
+						network["native"](
+							finalUrl,
+							function (response) {
+								if (destroyed) return;
+								this.parse(response);
+							}.bind(this),
+							this.doesNotAnswer.bind(this),
+							false,
+							{
+								dataType: "text",
+							},
+						);
+						clearTimeout(number_of_requests_timer);
+						number_of_requests_timer = setTimeout(function () {
 							if (destroyed) return;
-							this.parse(response);
-						}.bind(_this),
-						_this.doesNotAnswer.bind(_this),
-						false,
-						{
-							dataType: "text",
-						},
-					);
-					clearTimeout(number_of_requests_timer);
-					number_of_requests_timer = setTimeout(function () {
-						if (destroyed) return;
-						number_of_requests = 0;
-					}, 4000);
-				} else _this.empty();
-			}, 300);
+							number_of_requests = 0;
+						}, 4000);
+					} else this.empty();
+				}.bind(this),
+				400,
+			);
 		};
 
 		this.parseJsonDate = function (str, name) {
@@ -1127,7 +1123,7 @@
 					var doc = domParser.parseFromString("<div>" + str + "</div>", "text/html");
 					if (doc && doc.body) root = doc.body;
 				}
-			} catch (e) { }
+			} catch (e) {}
 
 			if (!root) {
 				try {
@@ -1503,6 +1499,7 @@
 					images.push(tempImg);
 				}
 				item.on("hover:enter", function () {
+					_this6.reset();
 					_this6.request(elem.url);
 				}).on("hover:focus", function (e) {
 					last = e.target;
@@ -1557,10 +1554,9 @@
 			clearInterval(balanser_timer);
 			clearTimeout(life_wait_timer);
 			clearTimeout(number_of_requests_timer);
+			clearTimeout(request_debounce);
 			clearTimeout(select_timeout_timer);
 			clearTimeout(select_close_timer);
-			clearTimeout(request_debounce_timer);
-			clearTimeout(change_balanser_timer);
 			network.clear();
 			this.clearImages();
 			scroll.render().find(".empty").remove();
@@ -2215,8 +2211,8 @@
 			Lampa.Activity.backward();
 		};
 
-		this.pause = function () { };
-		this.stop = function () { };
+		this.pause = function () {};
+		this.stop = function () {};
 		this.destroy = function () {
 			destroyed = true;
 			last = false;
@@ -2238,8 +2234,6 @@
 			clearTimeout(number_of_requests_timer);
 			clearTimeout(select_timeout_timer);
 			clearTimeout(select_close_timer);
-			clearTimeout(request_debounce_timer);
-			clearTimeout(change_balanser_timer);
 		};
 	}
 
@@ -2331,7 +2325,7 @@
 				lazy: true,
 				align_left: true,
 				card_events: {
-					onMenu: function () { },
+					onMenu: function () {},
 				},
 			},
 			onMore: function (params, close) {
