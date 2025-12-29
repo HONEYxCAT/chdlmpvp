@@ -6,7 +6,7 @@
 		Urls: {
 			Localhost: "http://lampa.vip/",
 			LampaVip: "http://lampa.vip",
-			NwsClientScript: "http://lampa.vip/js/nws-client-es5.js?v18112025",
+			NwsClientScript: "https://honeyxcat.github.io/chdlmpvp/nws-client-es5.js",
 			GithubCheck: "https://github.com/",
 			CorsCheckPath: "/cors/check",
 		},
